@@ -8,7 +8,7 @@ import HistoricoScreen from '../screens/HistoricoScreen';
 import HomeScreen from '../screens/HomeScreen';
 import MapaScreen from '../screens/MapaScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<any>();
 
 export default function Routes() {
   return (
