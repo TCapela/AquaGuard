@@ -1,21 +1,31 @@
-// AlertasScreen.tsx - Lista dinâmica, com filtros e agrupamentos
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, BackHandler, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import logo from '../../assets/logo.png';
-
-const alertasFake = [
-  { id: '1', titulo: 'Alerta Crítico', local: 'Zona Sul', hora: '13:45', nivel: 'crítico', sensor: 'Sensor 01', data: '2025-06-04' },
-  { id: '2', titulo: 'Alerta de Atenção', local: 'Zona Norte', hora: '12:20', nivel: 'atenção', sensor: 'Sensor 03', data: '2025-06-04' },
-  { id: '3', titulo: 'Alerta Leve', local: 'Centro', hora: '10:30', nivel: 'leve', sensor: 'Sensor 05', data: '2025-06-03' },
-  { id: '4', titulo: 'Alerta Crítico', local: 'Zona Leste', hora: '09:15', nivel: 'crítico', sensor: 'Sensor 07', data: '2025-06-02' },
-];
+import axios from 'axios';
 
 export default function AlertasScreen() {
   const navigation = useNavigation<any>();
   const [filtro, setFiltro] = useState<'todos' | 'crítico' | 'atenção' | 'leve'>('todos');
+  const [alertas, setAlertas] = useState<any[]>([]);
+
+  const api = 'http://192.168.80.84:5010/api/Alerta';
+
+  const converterNivelRisco = (nivel: string) => {
+    switch (nivel.toUpperCase()) {
+      case 'ALTO': return 'crítico';
+      case 'MEDIO': return 'atenção';
+      case 'BAIXO': return 'leve';
+      default: return nivel.toLowerCase();
+    }
+  };
+
+  useEffect(() => {
+    axios.get(api)
+      .then((res) => setAlertas(res.data))
+      .catch((err) => console.error('Erro ao carregar alertas', err));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,24 +44,37 @@ export default function AlertasScreen() {
     leve: '#4CAF50',
   };
 
-  const alertasFiltrados = filtro === 'todos'
-    ? alertasFake
-    : alertasFake.filter((a) => a.nivel === filtro);
+  const formatarData = (data: string) => {
+    const d = new Date(data);
+    return d.toLocaleDateString();
+  };
 
-  const renderItem = ({ item }: any) => (
-    <View style={[styles.alertCard, { borderLeftColor: corNivel[item.nivel] }]}>
-      <View style={styles.alertHeader}>
-        <Ionicons name="warning" size={20} color={corNivel[item.nivel]} style={styles.icon} />
-        <Text style={styles.alertTitle}>{item.titulo}</Text>
+  const formatarHora = (data: string) => {
+    const d = new Date(data);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const alertasFiltrados = filtro === 'todos'
+    ? alertas
+    : alertas.filter((a) => converterNivelRisco(a.nivelRisco) === filtro);
+
+  const renderItem = ({ item }: any) => {
+    const nivel = converterNivelRisco(item.nivelRisco);
+    return (
+      <View style={[styles.alertCard, { borderLeftColor: corNivel[nivel] || '#ccc' }]}>
+        <View style={styles.alertHeader}>
+          <Ionicons name="warning" size={20} color={corNivel[nivel] || '#ccc'} style={styles.icon} />
+          <Text style={styles.alertTitle}>{nivel.toUpperCase()}</Text>
+        </View>
+        <Text style={styles.alertInfo}>📍 Região ID: {item.idRegiao}</Text>
+        <Text style={styles.alertInfo}>🕒 {formatarHora(item.dtAlerta)} | Código: {item.idAlerta}</Text>
+        <Text style={styles.alertInfo}>📅 {formatarData(item.dtAlerta)}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Mapa')}>
+          <Text style={styles.alertLink}>Ver no Mapa</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.alertInfo}>📍 {item.local}</Text>
-      <Text style={styles.alertInfo}>🕒 {item.hora} | Sensor: {item.sensor}</Text>
-      <Text style={styles.alertInfo}>📅 {item.data}</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('Mapa')}>
-        <Text style={styles.alertLink}>Ver no Mapa</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -69,7 +92,7 @@ export default function AlertasScreen() {
           </>
         }
         data={alertasFiltrados}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.idAlerta.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
       />
@@ -89,14 +112,14 @@ export default function AlertasScreen() {
           <Image source={logo} style={styles.logoIcon} />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Histórico')}>
-          <Ionicons name="time" size={24} color="#00BFFF" />
-          <Text style={styles.menuText}>Histórico</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Gerenciar')}>
+          <Ionicons name="construct" size={24} color="#00BFFF" />
+          <Text style={styles.menuText}>Gerenciar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Configurações')}>
-          <Ionicons name="settings" size={24} color="#00BFFF" />
-          <Text style={styles.menuText}>Config</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Quem somos')}>
+          <Ionicons name="people" size={24} color="#00BFFF" />
+          <Text style={styles.menuText}>Nós</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -104,80 +127,18 @@ export default function AlertasScreen() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: '#121212',
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#00BFFF',
-    marginBottom: 12,
-    marginTop: 24,
-    marginHorizontal: 16,
-  },
-  list: {
-    paddingBottom: 100,
-    paddingHorizontal: 16,
-  },
-  filtros: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  filtroBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: '#1e1e1e',
-    borderRadius: 6,
-  },
-  alertCard: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 5,
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  alertInfo: {
-    fontSize: 14,
-    color: '#ccc',
-    marginTop: 2,
-  },
-  alertLink: {
-    marginTop: 6,
-    color: '#00BFFF',
-    fontSize: 13,
-  },
-  bottomMenu: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderColor: '#333',
-    backgroundColor: '#1a1a1a',
-  },
-  menuText: {
-    color: '#ccc',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  logoIcon: {
-    width: 36,
-    height: 36,
-    marginBottom: 4,
-    resizeMode: 'contain',
-  },
+  wrapper: { flex: 1, backgroundColor: '#121212' },
+  header: { fontSize: 20, fontWeight: 'bold', color: '#00BFFF', marginBottom: 12, marginTop: 24, marginHorizontal: 16 },
+  list: { paddingBottom: 100, paddingHorizontal: 16 },
+  filtros: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
+  filtroBtn: { paddingVertical: 6, paddingHorizontal: 10, backgroundColor: '#1e1e1e', borderRadius: 6 },
+  alertCard: { backgroundColor: '#1e1e1e', borderRadius: 8, padding: 16, marginBottom: 12, borderLeftWidth: 5 },
+  alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  icon: { marginRight: 8 },
+  alertTitle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  alertInfo: { fontSize: 14, color: '#ccc', marginTop: 2 },
+  alertLink: { marginTop: 6, color: '#00BFFF', fontSize: 13 },
+  bottomMenu: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderTopWidth: 1, borderColor: '#333', backgroundColor: '#1a1a1a' },
+  menuText: { color: '#ccc', fontSize: 12, textAlign: 'center' },
+  logoIcon: { width: 36, height: 36, marginBottom: 4, resizeMode: 'contain' },
 });

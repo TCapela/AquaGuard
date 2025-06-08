@@ -5,8 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import AlertasScreen from '../screens/AlertasScreen';
 import MapaScreen from '../screens/MapaScreen';
-import HistoricoScreen from '../screens/HistoricoScreen';
-import ConfigScreen from '../screens/ConfigScreen';
+import GerenciarAlertasScreen from '../screens/GerenciarAlertasScreen';
+import WeScreen from '../screens/WeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,8 +24,8 @@ export default function Routes() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Alertas" component={AlertasScreen} />
         <Stack.Screen name="Mapa" component={MapaScreen} />
-        <Stack.Screen name="Histórico" component={HistoricoScreen} />
-        <Stack.Screen name="Configurações" component={ConfigScreen} />
+        <Stack.Screen name="Gerenciar" component={GerenciarAlertasScreen} />
+        <Stack.Screen name="Quem somos" component={WeScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
