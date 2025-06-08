@@ -20,6 +20,10 @@ Aplicativo desenvolvido em React Native (Expo) para monitoramento de alertas de 
 - CRUD de alertas (criar, editar, excluir)
 - Página "Quem Somos"
 
+## 🎥 Demonstração do App
+Assista ao vídeo de apresentação no YouTube:  
+👉 https://www.youtube.com/watch?v=lUKRc8g_tE4
+
 ## ⚠️ Observações
 - Testado no Expo Go via LAN (mesma rede entre notebook e celular).
 - A API deve estar rodando na porta `5010`.
